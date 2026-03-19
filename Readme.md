@@ -14,6 +14,9 @@ python_version: "3.10"
 
 This project utilises Retrieval-Augmented Generation (RAG) to summarize and query YouTube video content.
 
+# LIVE DEMO
+https://yt-rag-bot.onrender.com
+
 ## 🏗 System Architecture
 The application implements a **Modular RAG** architecture:
 * **LLM**: Gemini 2.5 Flash
