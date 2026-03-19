@@ -24,25 +24,25 @@ def get_video_id(url):
     return None
 
 def get_transcript(url):
-
     video_id = get_video_id(url)
-    ytt_api = YouTubeTranscriptApi()
-    transcripts = ytt_api.list(video_id)
-   
-    transcript = ""
-    for t in transcripts:
-
-        if t.language_code == 'en':
-            if t.is_generated:
-
-                if len(transcript) == 0:
+    if not video_id:
+        return None
+    try:
+        ytt_api = YouTubeTranscriptApi()
+        transcripts = ytt_api.list(video_id)
+        transcript = ""
+        for t in transcripts:
+            if t.language_code == 'en':
+                if t.is_generated:
+                    if len(transcript) == 0:
+                        transcript = t.fetch()
+                else:
                     transcript = t.fetch()
-            else:
-
-                transcript = t.fetch()
-                break
-   
-    return transcript if transcript else None
+                    break
+        return transcript if transcript else None
+    except Exception as e:
+        print(f"Error fetching transcript: {e}")
+        return None
  
  
 def process(transcript):
@@ -323,4 +323,5 @@ with gr.Blocks() as interface:
     summarize_btn.click(summarize_video, inputs=video_url, outputs=summary_output)
     question_btn.click(answer_question, inputs=[video_url, question_input], outputs=answer_output)
 
-interface.launch(server_name="0.0.0.0", server_port=7860)
+port = int(os.environ.get("PORT", 7860))
+interface.launch(server_name="0.0.0.0", server_port=port)
