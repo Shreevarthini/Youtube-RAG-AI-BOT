@@ -1,5 +1,6 @@
 ---
 title: Youtube RAG AI BOT
+emoji: 📺
 colorFrom: red
 colorTo: indigo
 sdk: gradio
