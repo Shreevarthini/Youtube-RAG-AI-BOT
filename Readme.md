@@ -52,3 +52,7 @@ flowchart TD
     style F fill:#EEEDFE,stroke:#534AB7,color:#3C3489
     style G fill:#FAECE7,stroke:#993C1D,color:#4A1B0C
 ```
+
+> **Note**: Due to YouTube's IP restrictions on cloud providers, 
+> the hosted demo may not fetch transcripts. Clone and run locally 
+> for full functionality. The RAG architecture is fully implemented.
