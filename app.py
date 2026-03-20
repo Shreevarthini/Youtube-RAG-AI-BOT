@@ -1,12 +1,13 @@
 import gradio as gr
 import re 
 import os
-from youtube_transcript_api import YouTubeTranscriptApi
 from langchain_text_splitters import RecursiveCharacterTextSplitter 
 from langchain_google_genai import ChatGoogleGenerativeAI, GoogleGenerativeAIEmbeddings
 from langchain_community.vectorstores import FAISS 
 from langchain_core.output_parsers import StrOutputParser 
 from langchain_core.prompts import PromptTemplate
+from youtube_transcript_api import YouTubeTranscriptApi
+from youtube_transcript_api.proxies import WebshareProxyConfig
  
 api_key = os.environ.get("GOOGLE_API_KEY")
 
@@ -25,22 +26,26 @@ def get_video_id(url):
 def get_transcript(url):
     video_id = get_video_id(url)
     if not video_id:
-        print("ERROR: Could not extract video ID from URL")
         return None
-    
-    print(f"Fetching transcript for video ID: {video_id}")
-    
+
+    proxy_username = os.environ.get("PROXY_USERNAME")
+    proxy_password = os.environ.get("PROXY_PASSWORD")
+
     try:
-        ytt_api = YouTubeTranscriptApi()
-        transcript_list = ytt_api.list(video_id)
-        
-        # Print ALL available transcripts
-        print("Available transcripts:")
-        for t in transcript_list:
-            print(f"  - language: {t.language_code}, generated: {t.is_generated}")
-        
+        if proxy_username and proxy_password:
+            ytt_api = YouTubeTranscriptApi(
+                proxy_config=WebshareProxyConfig(
+                    proxy_username=proxy_username,
+                    proxy_password=proxy_password,
+                    filter_ip_locations=["us", "gb"],
+                )
+            )
+        else:
+            ytt_api = YouTubeTranscriptApi()
+
+        transcripts = ytt_api.list(video_id)
         transcript = ""
-        for t in transcript_list:
+        for t in transcripts:
             if t.language_code.startswith('en'):
                 if t.is_generated:
                     if len(transcript) == 0:
@@ -48,16 +53,11 @@ def get_transcript(url):
                 else:
                     transcript = t.fetch()
                     break
-        
-        if not transcript:
-            print("No English transcript found")
-        else:
-            print(f"Transcript fetched, length: {len(transcript)}")
-            
+
         return transcript if transcript else None
 
     except Exception as e:
-        print(f"Error fetching transcript: {e}")
+        print(f"Error: {e}")
         return None
  
 def process(transcript):
@@ -264,7 +264,13 @@ transcript_storage = ""
 def summarize_video(video_url):
     video_id = get_video_id(video_url)
     if not video_id:
-        return "ERROR: Could not extract video ID from URL"
+        return (
+                "Transcript unavailable.\n\n"
+            "YouTube blocks transcript requests from cloud server IPs.\n"
+            "Please try again in a few minutes or try a different video.\n\n"
+            "To run locally:\n"
+            "git clone https://github.com/Shreevarthini/Youtube-Rag-AI-Bot"
+        )
     
     try:
         ytt_api = YouTubeTranscriptApi()
@@ -285,7 +291,10 @@ def summarize_video(video_url):
  
 def answer_question(video_url, user_question):
     raw_data = get_transcript(video_url)
-    if not raw_data or not user_question: return "Ensure URL and Question are provided."
+    if not raw_data or not user_question: return (           
+        "Transcript unavailable or no question provided.\n\n"
+        "YouTube blocks transcript requests from cloud server IPs.\n"
+        "Please try again in a few minutes or try a different video.")
     
     full_text = process(raw_data)
     
